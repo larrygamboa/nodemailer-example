@@ -1,6 +1,3 @@
-
-
-
 const express = require("express");
 const cors = require("cors");
 const nodemailer = require("nodemailer");
@@ -16,24 +13,39 @@ app.use(cors({ origin: "*" }));
 
 app.use("/public", express.static(process.cwd() + "/public")); //make public static
 
-const transporter = nodemailer.createTransport({
-  service: "hotmail",
+let transporter = nodemailer.createTransport({
+  host: "smtp.live.com",
+  secure: false,
+  port: 587,
+  logger: true,
+  debug: true,
   auth: {
     user: process.env.EMAIL,
     pass: process.env.PASS,
   },
+  tls: {
+    // do not fail on invalid certs
+    rejectUnauthorized: true,
+    ciphers: 'SSLv3'
+  }
 });
 
 // verify connection configuration
 transporter.verify(function (error, success) {
-  if (error) {
-    console.log(error);
+  if (success) {
+    console.log("verification success");
   } else {
-    console.log("Server is ready to take our messages");
+    console.log("error", error);
   }
+  // console.log("transporter is running,", error);
+  // if (error) {
+  //   console.log(error);
+  // } else {
+  //   console.log("Server is ready to take our messages");
+  // }
 });
 
-app.post("/send", (req, res) => {
+app.post("/api/send", (req, res) => {
   let form = new multiparty.Form();
   let data = {};
   form.parse(req, function (err, fields) {
@@ -43,9 +55,9 @@ app.post("/send", (req, res) => {
     });
     console.log(data);
     const mail = {
-      sender: `${data.name} <${data.email}>`,
-      to: process.env.EMAIL, // receiver email,
-      subject: data.subject,
+      from: process.env.EMAIL,
+      to: "ivan.sillasnavarro@gmail.com", // receiver email,
+      subject: `${data.subject}`,
       text: `${data.name} <${data.email}> \n${data.message}`,
     };
     transporter.sendMail(mail, (err, data) => {
